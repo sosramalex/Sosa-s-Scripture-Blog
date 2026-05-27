@@ -428,10 +428,20 @@ newPostBtn.addEventListener('click', () => showEditor(null));
 editorBackBtn.addEventListener('click', showDashboard);
 document.getElementById('edCancelBtn').addEventListener('click', showDashboard);
 
-function editPost(id) {
-  const post = allPosts.find(p => p.id === id);
-  if (!post) { alert('Post not found.'); return; }
-  showEditor(post);
+async function editPost(id) {
+  const meta = allPosts.find(p => p.id === id);
+  if (!meta) { alert('Post not found.'); return; }
+  try {
+    const data = await readFileContent(`posts/${id}.json`);
+    if (data) {
+      const full = JSON.parse(data.content);
+      showEditor(full);
+    } else {
+      showEditor(meta);
+    }
+  } catch {
+    showEditor(meta);
+  }
 }
 
 async function deletePost(id) {
