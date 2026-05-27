@@ -19,7 +19,7 @@ function formatDate(dateStr) {
 /* ===== LOAD & APPLY SITE CONFIG ===== */
 async function loadConfig() {
   try {
-    const res = await fetch('site-config.json');
+    const res = await fetch('site-config.json', { cache: 'no-cache' });
     siteConfig = await res.json();
     applyConfig(siteConfig);
   } catch {}
@@ -77,7 +77,7 @@ function renderPosts(posts) {
 /* ===== OPEN POST MODAL ===== */
 async function openPost(id) {
   try {
-    const res = await fetch(`posts/${id}.json`);
+    const res = await fetch(`posts/${id}.json`, { cache: 'no-cache' });
     if (!res.ok) return;
     const post = await res.json();
     showModal(post);
@@ -120,7 +120,7 @@ function handleEsc(e) {
 /* ===== LOAD POSTS ===== */
 async function loadPosts() {
   try {
-    const res = await fetch('posts/posts.json');
+    const res = await fetch('posts/posts.json', { cache: 'no-cache' });
     allPosts = await res.json();
     renderPosts(allPosts);
   } catch {}
