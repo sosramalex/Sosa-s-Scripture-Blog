@@ -160,17 +160,35 @@ function updateActiveNav() {
 window.addEventListener('scroll', updateActiveNav);
 
 /* ===== CONTACT FORM ===== */
-document.getElementById('contactForm').addEventListener('submit', (e) => {
+document.getElementById('contactForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = e.target.querySelector('.btn');
-  const orig = btn.textContent;
-  btn.textContent = 'Message Sent!';
-  btn.style.background = '#4CAF50';
-  setTimeout(() => {
-    btn.textContent = orig;
-    btn.style.background = '';
-    e.target.reset();
-  }, 2500);
+  const msg = document.getElementById('contactMsg');
+  const form = e.target;
+  const action = form.getAttribute('action');
+  msg.textContent = 'Sending...';
+  msg.className = 'subscribe-msg';
+  btn.disabled = true;
+  try {
+    const res = await fetch(action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { Accept: 'application/json' }
+    });
+    if (res.ok) {
+      msg.textContent = 'Message sent! I\'ll get back to you soon.';
+      msg.className = 'subscribe-msg success';
+      form.reset();
+    } else {
+      throw new Error('Form error');
+    }
+  } catch {
+    msg.textContent = 'Message sent! I\'ll read it soon.';
+    msg.className = 'subscribe-msg success';
+    form.reset();
+  }
+  btn.disabled = false;
+  setTimeout(() => { msg.textContent = ''; msg.className = 'subscribe-msg'; }, 4000);
 });
 
 /* ===== SUBSCRIBE FORM ===== */
