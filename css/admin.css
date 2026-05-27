@@ -247,6 +247,49 @@ label input, label textarea { margin-top: 6px; }
 .form-msg.success { color: var(--clr-success); }
 .form-msg.error { color: var(--clr-danger); }
 
+/* ===== MFA ===== */
+.mfa-group { max-width: 700px; }
+.mfa-status { font-size: 0.95rem; margin-bottom: 16px; }
+.mfa-enabled { color: var(--clr-success); font-weight: 600; }
+.mfa-disabled { color: var(--clr-danger); font-weight: 600; }
+.mfa-desc { font-size: 0.85rem; color: var(--clr-text-light); margin-bottom: 16px; }
+.mfa-qr-wrap { display: flex; justify-content: center; margin: 16px 0; }
+#mfaQr { padding: 12px; background: var(--clr-white); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+#mfaQr canvas, #mfaQr img { display: block; }
+.mfa-secret-label { font-size: 0.8rem; color: var(--clr-text-light); text-align: center; margin-bottom: 4px; }
+.mfa-secret {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  text-align: center;
+  background: var(--clr-bg);
+  padding: 10px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  word-break: break-all;
+  margin-bottom: 16px;
+  user-select: all;
+}
+.mfa-verify { max-width: 300px; margin: 0 auto; }
+.mfa-verify .btn { width: 100%; margin-top: 8px; }
+.mfa-actions { margin-top: 12px; }
+.mfa-recovery-section { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.mfa-recovery-codes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.mfa-recovery-codes .rcode {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  background: var(--clr-bg);
+  padding: 8px 14px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+.mfa-verify .form-msg { text-align: center; }
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 680px) {
   .login-card { padding: 32px 24px; }

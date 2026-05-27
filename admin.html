@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -16,6 +17,8 @@
     <div class="admin-card login-card">
       <h1>Faith &amp; Fellowship</h1>
       <p class="login-sub">Admin Panel</p>
+
+      <!-- Step 1: Password + Token -->
       <form id="loginForm">
         <label>
           Admin Password
@@ -38,6 +41,32 @@
         <button type="submit" class="btn btn-primary">Sign In</button>
         <p class="login-error" id="loginError"></p>
       </form>
+
+      <!-- Step 2: TOTP / Recovery -->
+      <div id="loginStep2" style="display:none">
+        <hr style="margin:20px 0;border:none;border-top:1px solid var(--clr-border)">
+        <p style="text-align:center;font-size:0.85rem;color:var(--clr-text-light);margin-bottom:16px">Multi-factor authentication</p>
+
+        <div id="loginTotpStep">
+          <p style="text-align:center;margin-bottom:16px">Enter the 6-digit code from your authenticator app:</p>
+          <input type="text" id="loginTotp" maxlength="6" pattern="[0-9]{6}" placeholder="000000" autocomplete="one-time-code" style="text-align:center;font-size:1.3rem;letter-spacing:6px;font-weight:600">
+          <button type="button" class="btn btn-primary" id="loginTotpBtn" style="width:100%;margin-top:12px">Verify</button>
+          <p style="text-align:center;margin-top:12px;font-size:0.8rem">
+            <a href="#" id="loginUseRecovery">Use a recovery code instead</a>
+          </p>
+          <p class="login-error" id="loginTotpError"></p>
+        </div>
+
+        <div id="loginRecoveryStep" style="display:none">
+          <p style="text-align:center;margin-bottom:16px">Enter one of your recovery codes:</p>
+          <input type="text" id="loginRecoveryCode" placeholder="XXXX-XXXX-XX" style="text-align:center;font-size:1rem;letter-spacing:2px">
+          <button type="button" class="btn btn-primary" id="loginRecoveryBtn" style="width:100%;margin-top:12px">Verify</button>
+          <p style="text-align:center;margin-top:12px;font-size:0.8rem">
+            <a href="#" id="loginBackToTotp">Back to authenticator code</a>
+          </p>
+          <p class="login-error" id="loginRecoveryError"></p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -89,20 +118,17 @@
           <span class="settings-hint">Edit the content shown on your blog.</span>
         </div>
         <form id="settingsForm" class="settings-form">
-
           <div class="settings-group">
             <h3>Global</h3>
             <label>Site Name <input type="text" id="cfg-siteName"></label>
             <label>Meta Description <textarea id="cfg-metaDescription" rows="2"></textarea></label>
           </div>
-
           <div class="settings-group">
             <h3>Hero Section</h3>
             <label>Title (HTML allowed) <textarea id="cfg-hero-title" rows="2"></textarea></label>
             <label>Subtitle <textarea id="cfg-hero-subtitle" rows="2"></textarea></label>
             <label>Background Image URL <input type="url" id="cfg-hero-bgImage"></label>
           </div>
-
           <div class="settings-group">
             <h3>About Section</h3>
             <label>Title <input type="text" id="cfg-about-title"></label>
@@ -111,19 +137,16 @@
             <label>Verse (HTML allowed) <textarea id="cfg-about-verse" rows="2"></textarea></label>
             <label>Image URL <input type="url" id="cfg-about-image"></label>
           </div>
-
           <div class="settings-group">
             <h3>Subscribe Section</h3>
             <label>Title <input type="text" id="cfg-subscribe-title"></label>
             <label>Subtitle <textarea id="cfg-subscribe-subtitle" rows="2"></textarea></label>
             <label>Success Message <input type="text" id="cfg-subscribe-successMsg"></label>
           </div>
-
           <div class="settings-group">
             <h3>Footer</h3>
             <label>Tagline <input type="text" id="cfg-footer-tagline"></label>
           </div>
-
           <div class="editor-actions">
             <button type="submit" class="btn btn-primary" id="settingsSaveBtn">Save Settings</button>
           </div>
@@ -135,20 +158,69 @@
       <div class="tab-content" id="tabAccount" style="display:none">
         <div class="dash-top">
           <h2>Account</h2>
-          <span class="settings-hint">Change your admin password.</span>
         </div>
+
+        <!-- Change Password -->
         <form id="passwordForm" class="settings-form">
           <div class="settings-group">
             <h3>Change Password</h3>
             <label>Current Password <input type="password" id="pw-current" required></label>
             <label>New Password <input type="password" id="pw-new" required minlength="4"></label>
             <label>Confirm New Password <input type="password" id="pw-confirm" required minlength="4"></label>
+            <div class="editor-actions">
+              <button type="submit" class="btn btn-primary" id="pwSaveBtn">Update Password</button>
+            </div>
+            <p class="form-msg" id="pwMsg"></p>
           </div>
-          <div class="editor-actions">
-            <button type="submit" class="btn btn-primary" id="pwSaveBtn">Update Password</button>
-          </div>
-          <p class="form-msg" id="pwMsg"></p>
         </form>
+
+        <!-- MFA Section -->
+        <div class="settings-group mfa-group">
+          <h3>Multi-Factor Authentication</h3>
+          <p class="mfa-status" id="mfaStatusLabel">Status: <span class="mfa-disabled">Disabled</span></p>
+
+          <!-- Enable MFA flow -->
+          <div id="mfaSetup" style="display:none">
+            <p class="mfa-desc">Scan this QR code with <strong>Google Authenticator</strong> (or any TOTP app):</p>
+            <div class="mfa-qr-wrap">
+              <div id="mfaQr"></div>
+            </div>
+            <p class="mfa-secret-label">Or enter this key manually:</p>
+            <p class="mfa-secret" id="mfaSecretText"></p>
+            <div class="mfa-verify">
+              <label>Verify by entering the 6-digit code from the app:
+                <input type="text" id="mfaVerifyCode" maxlength="6" pattern="[0-9]{6}" placeholder="000000" style="text-align:center;font-size:1.2rem;letter-spacing:4px;font-weight:600">
+              </label>
+              <button type="button" class="btn btn-primary" id="mfaVerifyBtn">Verify &amp; Enable</button>
+              <button type="button" class="btn btn-secondary" id="mfaCancelBtn">Cancel</button>
+            </div>
+            <p class="form-msg" id="mfaSetupMsg"></p>
+          </div>
+
+          <!-- Recovery codes display (shown right after enabling) -->
+          <div id="mfaRecoveryWrap" style="display:none">
+            <p class="mfa-desc"><strong>Save these recovery codes in a safe place!</strong> Each can be used once to log in if you lose access to your authenticator app.</p>
+            <div class="mfa-recovery-codes" id="mfaRecoveryList"></div>
+            <button type="button" class="btn btn-primary" id="mfaRecoveryDoneBtn">I've saved these codes</button>
+          </div>
+
+          <!-- MFA enabled controls -->
+          <div id="mfaControls" style="display:none">
+            <div class="mfa-recovery-section">
+              <p class="mfa-desc">Recovery codes (click to expand):</p>
+              <button type="button" class="btn btn-secondary btn-sm" id="mfaShowRecoveryBtn">Show Codes</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="mfaRegenBtn">Regenerate Codes</button>
+            </div>
+            <div style="margin-top:16px">
+              <button type="button" class="btn btn-danger btn-sm" id="mfaDisableBtn">Disable MFA</button>
+            </div>
+            <p class="form-msg" id="mfaControlMsg"></p>
+          </div>
+
+          <div class="mfa-actions">
+            <button type="button" class="btn btn-primary" id="mfaEnableBtn" style="display:none">Enable MFA</button>
+          </div>
+        </div>
       </div>
 
     </main>
@@ -164,48 +236,23 @@
         </nav>
       </div>
     </header>
-
     <main class="admin-main container">
       <h2 id="editorTitle">New Post</h2>
       <form id="editorForm" class="editor-form">
         <div class="form-row">
-          <label>
-            Title
-            <input type="text" id="edTitle" required>
-          </label>
-          <label>
-            Slug
-            <input type="text" id="edSlug" required>
-          </label>
+          <label>Title <input type="text" id="edTitle" required></label>
+          <label>Slug <input type="text" id="edSlug" required></label>
         </div>
         <div class="form-row">
-          <label>
-            Category
-            <input type="text" id="edCategory" placeholder="e.g. Faith, Prayer, Grace" required>
-          </label>
-          <label>
-            Author
-            <input type="text" id="edAuthor" value="Ministry Team" required>
-          </label>
+          <label>Category <input type="text" id="edCategory" placeholder="e.g. Faith, Prayer, Grace" required></label>
+          <label>Author <input type="text" id="edAuthor" value="Ministry Team" required></label>
         </div>
         <div class="form-row">
-          <label>
-            Date
-            <input type="date" id="edDate" required>
-          </label>
-          <label>
-            Image URL
-            <input type="url" id="edImage" placeholder="https://images.unsplash.com/...">
-          </label>
+          <label>Date <input type="date" id="edDate" required></label>
+          <label>Image URL <input type="url" id="edImage" placeholder="https://images.unsplash.com/..."></label>
         </div>
-        <label>
-          Excerpt (shown on the blog grid)
-          <textarea id="edExcerpt" rows="2" required></textarea>
-        </label>
-        <label>
-          Content (HTML allowed)
-          <textarea id="edContent" rows="12" required></textarea>
-        </label>
+        <label>Excerpt (shown on the blog grid) <textarea id="edExcerpt" rows="2" required></textarea></label>
+        <label>Content (HTML allowed) <textarea id="edContent" rows="12" required></textarea></label>
         <div class="editor-actions">
           <button type="submit" class="btn btn-primary" id="edSaveBtn">Publish Post</button>
           <button type="button" class="btn btn-secondary" id="edCancelBtn">Cancel</button>
@@ -215,6 +262,6 @@
     </main>
   </div>
 
-  <script src="js/admin.js?v=3"></script>
+  <script src="js/admin.js?v=4"></script>
 </body>
 </html>
