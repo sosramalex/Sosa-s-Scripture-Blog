@@ -58,7 +58,7 @@ function _getSessionEmail() {
   try { const s = JSON.parse(localStorage.getItem('sb-session')); return s?.user?.email || 'user'; } catch { return 'user'; }
 }
 
-function sbFetch(method, path, body) {
+function sbFetch(method, path, body, _noRetry) {
   const headers = { 'apikey': SB_KEY, 'Content-Type': 'application/json' };
   if (_token) headers['Authorization'] = `Bearer ${_token}`;
   return fetch(`${SB_URL}/${path}`, {
@@ -69,6 +69,9 @@ function sbFetch(method, path, body) {
     if (r.status >= 400) {
       let msg = text;
       try { const j = JSON.parse(text); msg = j.message || j.error || j.msg || msg; } catch {}
+      if (r.status === 401 && !_noRetry && msg.includes('JWT')) {
+        return _refreshToken().then(() => sbFetch(method, path, body, true));
+      }
       throw new Error(msg);
     }
     try { return JSON.parse(text); } catch { return text; }
@@ -81,8 +84,11 @@ function _refreshToken() {
   try {
     const s = JSON.parse(saved);
     if (!s.refresh_token) return Promise.reject(new Error('No refresh token'));
-    return sbFetch('POST', 'auth/v1/token?grant_type=refresh_token', { refresh_token: s.refresh_token })
+    const oldToken = _token;
+    _token = null;
+    return sbFetch('POST', 'auth/v1/token?grant_type=refresh_token', { refresh_token: s.refresh_token }, true)
       .then(data => {
+        _token = oldToken;
         if (data.access_token) {
           _token = data.access_token;
           s.access_token = data.access_token;
@@ -91,7 +97,7 @@ function _refreshToken() {
           localStorage.setItem('sb-session', JSON.stringify(s));
         }
         return data;
-      });
+      }).catch(err => { _token = oldToken; throw err; });
   } catch (e) { return Promise.reject(e); }
 }
 
