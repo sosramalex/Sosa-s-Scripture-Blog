@@ -27,22 +27,6 @@
           Supabase Password
           <input type="password" id="loginPassword" required>
         </label>
-        <hr style="margin:16px 0;border:none;border-top:1px solid var(--clr-border)">
-        <p style="font-size:0.8rem;color:var(--clr-text-light);margin-bottom:12px">GitHub credentials (for posts &amp; settings):</p>
-        <label>
-          GitHub Token (<a href="https://github.com/settings/tokens" target="_blank">create one</a> with <code>repo</code> scope)
-          <input type="password" id="loginToken" required>
-        </label>
-        <div class="form-row">
-          <label>
-            Repo Owner
-            <input type="text" id="loginOwner" required>
-          </label>
-          <label>
-            Repo Name
-            <input type="text" id="loginRepo" required>
-          </label>
-        </div>
         <button type="submit" class="btn btn-primary">Sign In</button>
         <p class="login-error" id="loginError"></p>
       </form>
@@ -52,6 +36,17 @@
         <input type="text" id="loginMfaCode" placeholder="000000" maxlength="6" style="text-align:center;font-size:1.5rem;letter-spacing:8px;width:100%;box-sizing:border-box;padding:10px">
         <button type="button" class="btn btn-primary" id="loginMfaBtn" style="margin-top:12px;width:100%">Verify</button>
         <p class="login-error" id="loginMfaError"></p>
+      </div>
+
+      <div id="loginMfaEnroll" style="display:none;margin-top:16px;border-top:1px solid var(--clr-border);padding-top:16px">
+        <p style="text-align:center;margin-bottom:12px;font-weight:600">Set Up Two-Factor Authentication</p>
+        <p style="text-align:center;margin-bottom:12px;font-size:0.85rem">You must set up MFA before accessing the dashboard.</p>
+        <p style="text-align:center;margin-bottom:12px;font-size:0.85rem">Scan the QR code with your authenticator app (e.g. Google Authenticator, Authy):</p>
+        <div style="display:flex;justify-content:center;margin-bottom:12px"><div id="loginMfaQr"></div></div>
+        <p style="text-align:center;font-size:0.85rem;color:var(--clr-text-light);margin-bottom:12px">Secret: <code id="loginMfaSecret"></code></p>
+        <input type="text" id="loginMfaEnrollCode" placeholder="000000" maxlength="6" style="text-align:center;font-size:1.5rem;letter-spacing:8px;width:100%;box-sizing:border-box;padding:10px">
+        <button type="button" class="btn btn-primary" id="loginMfaEnrollBtn" style="margin-top:12px;width:100%">Verify &amp; Enable MFA</button>
+        <p class="login-error" id="loginMfaEnrollError"></p>
       </div>
     </div>
   </div>
@@ -71,6 +66,7 @@
     <div class="admin-tabs container">
       <button class="tab active" data-tab="posts">Posts</button>
       <button class="tab" data-tab="settings">Site Settings</button>
+      <button class="tab" data-tab="github">GitHub</button>
       <button class="tab" data-tab="account">Account</button>
     </div>
 
@@ -137,6 +133,35 @@
             <button type="submit" class="btn btn-primary" id="settingsSaveBtn">Save Settings</button>
           </div>
           <p class="form-msg" id="settingsMsg"></p>
+        </form>
+      </div>
+
+      <!-- GitHub Tab -->
+      <div class="tab-content" id="tabGitHub" style="display:none">
+        <div class="dash-top">
+          <h2>GitHub Settings</h2>
+          <span class="settings-hint">GitHub credentials are needed to save posts and settings. They are stored on your Supabase account and never exposed in the repo.</span>
+        </div>
+        <form id="githubForm" class="settings-form">
+          <div class="settings-group">
+            <h3>Credentials</h3>
+            <label>
+              GitHub Token (<a href="https://github.com/settings/tokens" target="_blank">create one</a> with <code>repo</code> scope)
+              <input type="password" id="githubToken" required>
+            </label>
+            <div class="form-row">
+              <label>Repo Owner <input type="text" id="githubOwner" required></label>
+              <label>Repo Name <input type="text" id="githubRepo" required></label>
+            </div>
+            <div class="editor-actions">
+              <button type="submit" class="btn btn-primary" id="githubSaveBtn">Save GitHub Settings</button>
+            </div>
+            <p class="form-msg" id="githubMsg"></p>
+          </div>
+          <div class="settings-group" id="githubStatusGroup">
+            <h3>Status</h3>
+            <p id="githubStatus" style="font-size:0.85rem;color:var(--clr-text-light)">Not configured.</p>
+          </div>
         </form>
       </div>
 
