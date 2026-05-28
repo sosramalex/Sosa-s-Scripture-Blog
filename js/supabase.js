@@ -15,10 +15,43 @@ function _totpUri(s, e, i) {
   return 'otpauth://totp/' + encodeURIComponent(i) + ':' + encodeURIComponent(e) + '?secret=' + s + '&issuer=' + encodeURIComponent(i) + '&algorithm=SHA1&digits=6&period=30';
 }
 
+function _base32Decode(s) {
+  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let b = 0, bc = 0;
+  const r = [];
+  for (const ch of s.toUpperCase()) {
+    const idx = a.indexOf(ch);
+    if (idx === -1) continue;
+    b = (b << 5) | idx;
+    bc += 5;
+    if (bc >= 8) { bc -= 8; r.push((b >>> bc) & 0xff); }
+  }
+  return new Uint8Array(r);
+}
+
+function _totpCounter(t) {
+  const b = new Uint8Array(8);
+  let tmp = Math.floor(t / 30000);
+  for (let i = 7; i >= 0; i--) { b[i] = tmp & 0xff; tmp >>>= 8; }
+  return b;
+}
+
+function _totpCode(hmac) {
+  const o = hmac[19] & 0x0f;
+  return String((((hmac[o] & 0x7f) << 24) | (hmac[o + 1] << 16) | (hmac[o + 2] << 8) | hmac[o + 3]) % 1000000).padStart(6, '0');
+}
+
 async function _validateTOTP(code, secret) {
-  const r = await fetch('https://www.authenticatorApi.com/Validate.aspx?Pin=' + encodeURIComponent(code) + '&SecretCode=' + encodeURIComponent(secret));
-  const t = await r.text();
-  return t.trim().toLowerCase() === 'true';
+  try {
+    const keyBytes = _base32Decode(secret);
+    const key = await crypto.subtle.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-1' }, false, ['sign']);
+    const now = Date.now();
+    for (let off = -1; off <= 1; off++) {
+      const sig = await crypto.subtle.sign('HMAC', key, _totpCounter(now + off * 30000));
+      if (_totpCode(new Uint8Array(sig)) === code) return true;
+    }
+  } catch (e) { console.error('TOTP validation error:', e); }
+  return false;
 }
 
 function _getSessionEmail() {
